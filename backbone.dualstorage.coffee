@@ -11,7 +11,7 @@ Backbone.DualStorage = {
 }
 
 Backbone.Model.prototype.hasTempId = ->
-  _.isString(@id) and @id.length is 36 and @id.indexOf('t') == 0
+  _.isString(@id) and @id.length is 37 and @id.indexOf('@') == 0
 
 getStoreName = (collection, model) ->
   model ||= collection.model.prototype
@@ -71,7 +71,7 @@ class window.Store
   # by default generates a pseudo-GUID by concatenating random hexadecimal.
   # you can overwrite this function to use another strategy
   generateId: ->
-    't' + S4().substring(1) + S4() + '-' + S4() + '-' + S4() + '-' + S4() + '-' + S4() + S4() + S4()
+    '@' + S4() + S4() + '-' + S4() + '-' + S4() + '-' + S4() + '-' + S4() + S4() + S4()
 
   # Save the current state of the **Store** to *localStorage*.
   save: ->
@@ -107,7 +107,9 @@ class window.Store
   create: (model, options) ->
     if not _.isObject(model) then return model
     if not model.id
-      model.set model.idAttribute, @generateId()
+      guid = @generateId()
+      model.set model.idAttribute, guid
+      model.set 'guid', guid
     localStorage.setItem @name + @sep + model.id, JSON.stringify(if model.toJSON then model.toJSON(options) else model)
     @records.push model.id.toString()
     @save()
@@ -343,6 +345,7 @@ dualsync = (method, model, options) ->
           relayErrorCallback xhr
 
         model.set model.idAttribute, null, silent: true
+        model.set 'guid', temporaryId, silent: true
         options.xhr = onlineSync('create', model, options)
       else
         options.success = (resp, _status, _xhr) ->
